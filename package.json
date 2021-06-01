@@ -1,17 +1,17 @@
 {
-  "name": "concurrent-react",
+  "name": "react-concurrent-testing-timers",
   "version": "1.0.0",
-  "description": "A template for React using the experimental concurrent API for rendering.",
+  "description": "Testing timer based updates in concurrent react",
   "keywords": [],
   "main": "src/index.js",
   "dependencies": {
     "msw": "0.29.0",
-    "react": "experimental",
-    "react-dom": "experimental",
-    "react-scripts": "3.0.1"
+    "react": "next",
+    "react-dom": "next",
+    "react-scripts": "^4.0.3"
   },
   "devDependencies": {
-    "typescript": "3.3.3"
+    "typescript": "^4.3.2"
   },
   "scripts": {
     "start": "react-scripts start",

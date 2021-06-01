@@ -1,46 +1,115 @@
-import * as ReactDOM from "react-dom";
-import * as ReactDOMTestUtils from "react-dom/test-utils";
-import { rest, setupWorker } from "msw";
+jest.mock("scheduler", () => jest.requireActual("scheduler/unstable_mock"));
 
-describe("<App />", () => {
-  let container = null;
-  let root = null;
-  let worker = setupWorker(
-    rest.get("https://github.com/octocat", (req, res, ctx) => {
-      return res(
-        ctx.delay(1500),
-        ctx.status(202, "Mocked status"),
-        ctx.json({
-          message: "Mocked response JSON body"
-        })
-      );
-    })
-  );
+describe.each([
+  ["legacy root", createLegacyRoot],
+  ["concurrent root", createRoot],
+])("<App /> with %s", (label, createRootImpl) => {
+  let ReactDOM;
+  let ReactDOMTestUtils;
+  let App;
+
+  let render;
+  let unmount;
 
   beforeEach(() => {
-    container = document.createElement("container");
-    document.body.appendChild(container);
+    jest.resetModules();
 
-    root = ReactDOM.createRoot(container);
-
-    worker.start()
+    ReactDOM = require("react-dom");
+    ReactDOMTestUtils = require("react-dom/test-utils");
+    App = require("./App").default;
+    ({ render, unmount } = createRootImpl(ReactDOM));
   });
 
   afterEach(() => {
-    if (root !== null) {
-      ReactDOMTestUtils.act(() => {
-        root.unmount();
-      });
-      root = null;
-    }
+    // make sure we don't leak a possible `useFakeTimers` from a failed test
+    jest.useRealTimers();
 
-    if (container !== null) {
-      container.parentElement.removeChild(container);
-      container = null;
-    }
-
-    worker.stop()
+    ReactDOMTestUtils.act(() => {
+      unmount();
+    });
   });
 
-  it("loads data with real timers", () => {});
+  it("loads data with real timers", async () => {
+    ReactDOMTestUtils.act(() => {
+      render(<App />);
+    });
+
+    expect(document.querySelector("main").getAttribute("aria-busy")).toEqual(
+      "true"
+    );
+
+    // polling for data being fetched
+    // This approach worked in React 17 but times out in concurrent React
+    await ReactDOMTestUtils.act(async () => {
+      await new Promise((resolve) => {
+        setInterval(async () => {
+          if (
+            document.querySelector("main").getAttribute("aria-busy") !== "true"
+          ) {
+            resolve();
+          }
+        }, 50);
+      });
+    });
+
+    expect(document.querySelector("main pre").textContent).toEqual(
+      '{"react":"18"}'
+    );
+  }, 500);
+
+  it("loads data with fake timers", async () => {
+    jest.useFakeTimers("modern");
+
+    ReactDOMTestUtils.act(() => {
+      render(<App />);
+    });
+
+    expect(document.querySelector("main").getAttribute("aria-busy")).toEqual(
+      "true"
+    );
+
+    ReactDOMTestUtils.act(() => {
+      // hardcode the time it take to resolve the mocke fetch
+      jest.advanceTimersByTime(100);
+    });
+
+    expect(document.querySelector("main").getAttribute("aria-busy")).toEqual(
+      "false"
+    );
+    expect(document.querySelector("main pre").textContent).toEqual(
+      '{"react":"18"}'
+    );
+  }, 500);
 });
+
+function createRoot(ReactDOM) {
+  const container = document.createElement("container");
+  document.body.appendChild(container);
+
+  const root = ReactDOM.createRoot(container);
+
+  return {
+    render(element) {
+      root.render(element);
+    },
+    unmount() {
+      root.unmount();
+
+      container.parentElement.removeChild(container);
+    },
+  };
+}
+
+function createLegacyRoot(ReactDOM) {
+  const container = document.createElement("container");
+  document.body.appendChild(container);
+
+  return {
+    render(element) {
+      ReactDOM.render(element, container);
+    },
+    unmount() {
+      ReactDOM.unmountComponentAtNode(container);
+    },
+  };
+}

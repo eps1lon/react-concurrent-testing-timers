@@ -6,21 +6,12 @@ export default function App() {
   React.useEffect(() => {
     let cancelled = false;
 
-    fetch("https://github.com/octocat").then(
-      async (response) => {
-        const json = await response.json();
-
-        if (!cancelled) {
-          setData(json);
-        }
-      },
-      (error) => {
-        console.error(error);
-        if (!cancelled) {
-          setData(null);
-        }
+    // could be a fetch()
+    setTimeout(() => {
+      if (!cancelled) {
+        setData({ react: "18" });
       }
-    );
+    }, 100);
 
     return () => {
       cancelled = true;
@@ -30,9 +21,7 @@ export default function App() {
   return (
     <main aria-busy={data === undefined}>
       <h1>data</h1>
-      {data !== null && (
-        <pre data-testid="data">{JSON.stringify(data, null, 2)}</pre>
-      )}
+      {data !== null && <pre data-testid="data">{JSON.stringify(data)}</pre>}
     </main>
   );
 }
