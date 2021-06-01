@@ -1,0 +1,8 @@
+.App {
+  font-family: sans-serif;
+  text-align: center;
+}
+
+*[aria-busy="true"]::after {
+  content: ' loading...'
+} 
