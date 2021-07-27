@@ -40,7 +40,7 @@ describe.each([
     // This approach worked in React 17 but times out in concurrent React
     await ReactDOMTestUtils.act(async () => {
       await new Promise((resolve) => {
-        setInterval(async () => {
+        setInterval(() => {
           if (
             document.querySelector("main").getAttribute("aria-busy") !== "true"
           ) {
