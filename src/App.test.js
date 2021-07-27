@@ -1,5 +1,3 @@
-jest.mock("scheduler", () => jest.requireActual("scheduler/unstable_mock"));
-
 describe.each([
   ["legacy root", createLegacyRoot],
   ["concurrent root", createRoot],
@@ -106,7 +104,20 @@ function createLegacyRoot(ReactDOM) {
 
   return {
     render(element) {
-      ReactDOM.render(element, container);
+      const originalConsoleError = console.error;
+      console.error = function mockedConsoleError(format, ...args) {
+        if (format.includes("Use createRoot instead.")) {
+          return;
+        }
+
+        originalConsoleError.apply(console, [format, ...args]);
+      };
+
+      try {
+        ReactDOM.render(element, container);
+      } finally {
+        console.error = originalConsoleError;
+      }
     },
     unmount() {
       ReactDOM.unmountComponentAtNode(container);
