@@ -3,9 +3,9 @@ describe.each([
   ["concurrent root", createRoot],
 ])("<App /> with %s", (label, createRootImpl) => {
   let ReactDOM;
-  let ReactDOMTestUtils;
   let App;
 
+  let act;
   let render;
   let unmount;
 
@@ -13,7 +13,8 @@ describe.each([
     jest.resetModules();
 
     ReactDOM = require("react-dom");
-    ReactDOMTestUtils = require("react-dom/test-utils");
+    const ReactDOMTestUtils = require("react-dom/test-utils");
+    act = ReactDOMTestUtils.act;
     App = require("./App").default;
     ({ render, unmount } = createRootImpl(ReactDOM));
   });
@@ -22,13 +23,13 @@ describe.each([
     // make sure we don't leak a possible `useFakeTimers` from a failed test
     jest.useRealTimers();
 
-    ReactDOMTestUtils.act(() => {
+    act(() => {
       unmount();
     });
   });
 
   it("loads data with real timers", async () => {
-    ReactDOMTestUtils.act(() => {
+    act(() => {
       render(<App />);
     });
 
@@ -38,7 +39,7 @@ describe.each([
 
     // polling for data being fetched
     // This approach worked in React 17 but times out in concurrent React
-    await ReactDOMTestUtils.act(async () => {
+    await act(async () => {
       await new Promise((resolve) => {
         setInterval(() => {
           if (
@@ -58,7 +59,7 @@ describe.each([
   it("loads data with fake timers", async () => {
     jest.useFakeTimers("modern");
 
-    ReactDOMTestUtils.act(() => {
+    act(() => {
       render(<App />);
     });
 
@@ -66,7 +67,7 @@ describe.each([
       "true"
     );
 
-    ReactDOMTestUtils.act(() => {
+    act(() => {
       // hardcode the time it take to resolve the mocke fetch
       jest.advanceTimersByTime(100);
     });
