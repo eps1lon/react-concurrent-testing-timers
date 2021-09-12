@@ -13,8 +13,9 @@ describe.each([
     jest.resetModules();
 
     ReactDOM = require("react-dom");
+    const React = require("react");
     const ReactDOMTestUtils = require("react-dom/test-utils");
-    act = ReactDOMTestUtils.act;
+    act = React.unstable_act || ReactDOMTestUtils.act;
     App = require("./App").default;
     ({ render, unmount } = createRootImpl(ReactDOM));
   });
