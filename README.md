@@ -5,5 +5,7 @@ See ["Planned changes to `act` testing API"](https://github.com/reactwg/react-18
 
 ## real timers
 
-It seems like we can't test real timers with `act`.
-The updates from real timers are never flushed when wrapped inside `act`.
+Testing real timers currently has a misleading warning.
+When letting real timers run, React will issue warnings if an update was not wrapped in act.
+However, wrapping the real timer run inside `act()` will only flush the updates when exiting the `act` call.
+This makes it impossible to wait for a generic condition e.g. an element to appear.

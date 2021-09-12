@@ -23,13 +23,16 @@ describe.each([
   afterEach(() => {
     // make sure we don't leak a possible `useFakeTimers` from a failed test
     jest.useRealTimers();
+    if (console.error.mock !== undefined) {
+      console.error.mockRestore();
+    }
 
     act(() => {
       unmount();
     });
   });
 
-  it("loads data with real timers", async () => {
+  it("loads data with real timers when wrapped in act", async () => {
     act(() => {
       render(<App />);
     });
@@ -52,6 +55,37 @@ describe.each([
       });
     });
 
+    expect(document.querySelector("main pre").textContent).toEqual(
+      '{"react":"18"}'
+    );
+  }, 500);
+
+  it("loads data with real timers when not wrapped in act", async () => {
+    act(() => {
+      render(<App />);
+    });
+
+    expect(document.querySelector("main").getAttribute("aria-busy")).toEqual(
+      "true"
+    );
+
+    jest.spyOn(console, "error").mockImplementation(() => {});
+    // polling for data being fetched
+    // This approach works but issues "missing act" warnings even though every scheduled effect will be flushed
+    await new Promise((resolve) => {
+      setInterval(() => {
+        if (
+          document.querySelector("main").getAttribute("aria-busy") !== "true"
+        ) {
+          resolve();
+        }
+      }, 50);
+    });
+
+    expect(console.error).toHaveBeenCalledTimes(1);
+    expect(console.error.mock.calls[0][0]).toMatch(
+      "Warning: An update to %s inside a test was not wrapped in act(...)."
+    );
     expect(document.querySelector("main pre").textContent).toEqual(
       '{"react":"18"}'
     );
